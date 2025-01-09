@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Song</title>
+    <link rel="stylesheet" href="/static/identifySong.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to the Song Guessing Game!</h1>
+        </div>
+
+        <div id="nameInputSection">
+            <input id="nameInput" type="text" placeholder="Enter your name">
+            <button onclick="submitName()">Join Game</button>
+        </div>
+
+        <div id="gameSection" style="display: none;">
+            <p id="guessState">Game State: Waiting for players...</p>
+            <div id="answerSection">
+                <input id="guessInput" type="text" placeholder="Your guess...">
+                <button id="submitAnswer" onclick="sendGuess()">Submit Guess</button>
+            </div>
+            <p id="answerMessage"></p>
+        </div>
+
+        <div id="players" class="user-names" style="margin-top: 20px;">Players: </div>
+        <div id="winner" style="margin-top: 20px;">Winner: None</div>
+
+        <div class="sound-wave">
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket("ws:172.30.161.69:8000/ws"); // Update IP if needed
+
+        ws.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (data.type === "prompt") {
+                document.getElementById("guessState").textContent = data.message;
+            } else if (data.type === "update") {
+                document.getElementById("players").textContent = `Players: ${data.players.join(", ")}`;
+                document.getElementById("winner").textContent = `Winner: ${data.winner || "None"}`;
+                document.getElementById("guessState").textContent = data.guess_state;
+
+                if (data.winner) {
+                    document.getElementById("guessInput").disabled = true;
+                    document.getElementById("submitAnswer").disabled = true;
+                    document.getElementById("answerMessage").textContent = `${data.winner} guessed correctly!`;
+                }
+            }
+        };
+
+        function submitName() {
+            const nameInput = document.getElementById("nameInput");
+            ws.send(nameInput.value);
+            nameInput.disabled = true;
+            document.getElementById("nameInputSection").style.display = "none";
+            document.getElementById("gameSection").style.display = "block";
+        }
+
+        function sendGuess() {
+            const input = document.getElementById("guessInput");
+            ws.send(input.value);
+            input.value = "";
+        }
+    </script>
+</body>
+
+</html>
